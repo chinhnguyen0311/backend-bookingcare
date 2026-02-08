@@ -1,0 +1,10 @@
+package com.IMIC.booking_care.system.enums;
+
+public enum NotificationType {
+    APPOINTMENT_REMINDER,
+    APPOINTMENT_CONFIRMATION,
+    APPOINTMENT_CANCELLATION,
+    DOCTOR_MESSAGE,
+    SYSTEM_NOTIFICATION,
+    PRESCRIPTION_READY
+}
