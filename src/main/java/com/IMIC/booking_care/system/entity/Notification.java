@@ -2,13 +2,14 @@ package com.IMIC.booking_care.system.entity;
 
 import com.IMIC.booking_care.system.enums.NotificationType;
 import com.IMIC.booking_care.system.enums.RelatedType;
+import com.IMIC.booking_care.user.entity.User;
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import jakarta.persistence.*;
-import org.apache.catalina.User;
+
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
