@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -54,5 +55,17 @@ public class MedicalScheduleService {
                         .isAvailable(slot.getIsAvailable())
                         .build())
                 .toList();
+    }
+    public List<LocalDate> getWorkingDates(UUID doctorId) {
+        log.info("Fetching working dates for doctorId={}", doctorId);
+
+        List<LocalDate> dates = doctorAvailableSlotRepository
+                .findWorkingDatesByDoctorId(doctorId, LocalDate.now());
+
+        if (dates.isEmpty()) {
+            log.info("Bác sĩ {} không có lịch làm việc", doctorId);
+        }
+
+        return dates;
     }
 }

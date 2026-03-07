@@ -44,4 +44,19 @@ public class MedicalScheduleController {
                 .data(response)
                 .build();
     }
+    @GetMapping("/working-dates")
+    public ApiResponse<List<LocalDate>> getWorkingDates(@RequestParam UUID doctorId) {
+        List<LocalDate> dates = medicalScheduleService.getWorkingDates(doctorId);
+
+        String message = dates.isEmpty()
+                ? "Bác sĩ hiện không có lịch làm việc"
+                : "Lấy danh sách ngày làm việc thành công";
+
+        return ApiResponse.<List<LocalDate>>builder()
+                .success(true)
+                .code(200)
+                .message(message)
+                .data(dates)
+                .build();
+    }
 }
