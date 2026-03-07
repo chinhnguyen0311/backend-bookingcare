@@ -160,7 +160,7 @@ VALUES
 ('nguyenthilanhuong', 'lanhuong.nguyen@clinic.com', 'Bác sĩ Nguyễn Thị Lan Hương', 'd12345', 'DOCTOR', 'FEMALE', TRUE),
 ('thaivanthanh', 'vanthanh.thai@clinic.com', 'Bác sĩ Thái Văn Thành', 'd12345', 'DOCTOR', 'MALE', TRUE),
 ('dangbahiep', 'bahiep.dang@clinic.com', 'Ths. BSCKII Đặng Bá Hiệp', 'd12345', 'DOCTOR', 'MALE', TRUE),
-('dangvangiap', 'vangiap.dang@clinic.com', 'BS. CKI Đặng Văn Giáp', 'd12345', 'DOCTOR', 'MALE', TRUE);
+('dangvangiap', 'vangiap.dang@clinic.com', 'BS. CKI Đặng Văn Giáp', 'd12345', 'DOCTOR', 'MALE', TRUE),
 ('admin', 'admin@admin.com', 'Admin', 'admin123', 'ADMIN', 'MALE', TRUE);
 INSERT INTO specialties (name, description)
 VALUES
@@ -456,3 +456,43 @@ FROM target_doctor CROSS JOIN (
     VALUES ('Thứ 2', '08:00', '12:00'), ('Thứ 3', '08:00', '12:00'), ('Thứ 4', '08:00', '12:00'), ('Thứ 5', '08:00', '12:00'), ('Thứ 7', '08:00', '12:00'),
            ('Thứ 2', '13:00', '17:00'), ('Thứ 3', '13:00', '17:00'), ('Thứ 6', '13:00', '17:00'), ('Thứ 7', '13:00', '17:00')
 ) AS schedule(work_date, start_time, end_time);
+WITH next_week AS (
+    -- Bước 1: Lấy ra 7 ngày của tuần sau bắt đầu từ ngày mai
+    SELECT
+        CAST(day_series AS DATE) AS slot_date,
+        CASE EXTRACT(ISODOW FROM day_series)
+            WHEN 1 THEN 'Thứ 2'
+            WHEN 2 THEN 'Thứ 3'
+            WHEN 3 THEN 'Thứ 4'
+            WHEN 4 THEN 'Thứ 5'
+            WHEN 5 THEN 'Thứ 6'
+            WHEN 6 THEN 'Thứ 7'
+            WHEN 7 THEN 'Chủ nhật'
+        END AS work_date_str
+    FROM generate_series(
+        CURRENT_DATE + INTERVAL '1 day',  -- Bắt đầu từ ngày mai (Thứ 2)
+        CURRENT_DATE + INTERVAL '7 days', -- Kết thúc vào 7 ngày sau (Chủ nhật tuần sau)
+        INTERVAL '1 day'
+    ) AS day_series
+),
+generated_slots AS (
+    -- Bước 2: Ép kiểu thành TIMESTAMP để chia slot 30 phút
+    SELECT
+        ds.doctor_id,
+        nw.slot_date,
+        CAST(time_series AS TIME) AS start_time,
+        CAST(time_series + INTERVAL '30 minutes' AS TIME) AS end_time
+    FROM doctor_schedules ds
+    JOIN next_week nw ON ds.work_date = nw.work_date_str
+    CROSS JOIN generate_series(
+        nw.slot_date + ds.start_time,
+        nw.slot_date + ds.end_time - INTERVAL '30 minutes',
+        INTERVAL '30 minutes'
+    ) AS time_series
+    WHERE ds.is_active = TRUE
+)
+-- Bước 3: Đẩy toàn bộ dữ liệu vào bảng
+INSERT INTO doctor_available_slot (doctor_id, slot_date, start_time, end_time)
+SELECT doctor_id, slot_date, start_time, end_time
+FROM generated_slots
+ORDER BY doctor_id, slot_date, start_time;
