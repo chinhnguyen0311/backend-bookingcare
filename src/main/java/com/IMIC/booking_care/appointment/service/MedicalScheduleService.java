@@ -36,7 +36,7 @@ public class MedicalScheduleService {
         log.info("Fetching slots for doctorId={} on date={}", request.getDoctorId(), request.getSlotDate());
 
         List<DoctorAvailableSlot> slots = doctorAvailableSlotRepository
-                .findByDoctorIdAndSlotDate(request.getDoctorId(), request.getSlotDate());
+                .findByDoctorIdAndSlotDateOrderByStartTimeAsc(request.getDoctorId(), request.getSlotDate());
 
         if (slots.isEmpty()) {
             log.warn("No slots found for doctorId={} on date={}", request.getDoctorId(), request.getSlotDate());

@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @Repository
 public interface DoctorAvailableSlotRepository extends JpaRepository<DoctorAvailableSlot, UUID> {
-    List<DoctorAvailableSlot> findByDoctorIdAndSlotDate(UUID doctorId, LocalDate slotDate);
+    List<DoctorAvailableSlot> findByDoctorIdAndSlotDateOrderByStartTimeAsc(UUID doctorId, LocalDate slotDate);
 
     @Query("""
         SELECT DISTINCT d.slotDate
