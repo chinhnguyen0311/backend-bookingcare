@@ -1,5 +1,6 @@
 package com.IMIC.booking_care.user.service;
 
+import com.IMIC.booking_care.appointment.dto.response.AppointmentResponse;
 import com.IMIC.booking_care.appointment.entity.Appointment;
 import com.IMIC.booking_care.appointment.entity.Doctor;
 import com.IMIC.booking_care.appointment.entity.DoctorAvailableSlot;
@@ -11,6 +12,7 @@ import com.IMIC.booking_care.user.dto.response.PatientAppointmentResponse;
 import com.IMIC.booking_care.user.entity.User;
 import com.IMIC.booking_care.user.repository.UserRepository;
 import com.nimbusds.jwt.SignedJWT;
+import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -134,6 +136,51 @@ public class UserService {
                             .build();
                 })
                 .toList();
+    }
+
+    @Transactional
+    public AppointmentResponse cancelAppointment(String token, UUID appointmentId) {
+        UUID userId = extractUserIdFromToken(token);
+        log.info("Cancelling appointmentId={} for userId={}", appointmentId, userId);
+
+        // 1. Tìm appointment — kiểm tra đúng của user này
+        Appointment appointment = appointmentRepository.findByAppointmentIdAndUserId(appointmentId, userId)
+                .orElseThrow(() -> new RuntimeException("Lịch hẹn không tồn tại"));
+
+        // 2. Kiểm tra status
+        if (AppointmentStatus.CANCELLED.equals(appointment.getStatus())) {
+            throw new RuntimeException("Lịch hẹn này đã bị huỷ trước đó");
+        }
+
+        if (AppointmentStatus.COMPLETED.equals(appointment.getStatus())) {
+            throw new RuntimeException("Không thể huỷ lịch hẹn đã hoàn thành");
+        }
+
+        // 3. Cập nhật status → CANCELLED
+        appointment.setStatus(AppointmentStatus.CANCELLED);
+        Appointment saved = appointmentRepository.save(appointment);
+
+        // 4. Mở lại slot
+        DoctorAvailableSlot slot = doctorAvailableSlotRepository.findById(appointment.getSlotId())
+                .orElseThrow(() -> new RuntimeException("Slot không tồn tại"));
+
+        slot.setIsAvailable(true);
+        doctorAvailableSlotRepository.save(slot);
+
+        log.info("Appointment {} cancelled by userId={}, slot {} is now available",
+                appointmentId, userId, slot.getSlotId());
+
+        return AppointmentResponse.builder()
+                .appointmentId(saved.getAppointmentId())
+                .doctorId(saved.getDoctorId())
+                .appointmentDate(saved.getAppointmentDate())
+                .startTime(slot.getStartTime())
+                .endTime(slot.getEndTime())
+                .expectedTime(saved.getExpectedTime())
+                .status(saved.getStatus())
+                .notes(saved.getNotes())
+                .createdAt(saved.getCreatedAt())
+                .build();
     }
     private UUID extractUserIdFromToken(String token) {
         try {

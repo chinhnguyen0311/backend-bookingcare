@@ -1,5 +1,6 @@
 package com.IMIC.booking_care.user.controller;
 
+import com.IMIC.booking_care.appointment.dto.response.AppointmentResponse;
 import com.IMIC.booking_care.appointment.enums.AppointmentStatus;
 import com.IMIC.booking_care.common.dto.ApiResponse;
 import com.IMIC.booking_care.user.dto.response.PatientAppointmentResponse;
@@ -10,6 +11,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -55,6 +57,18 @@ public class UserController {
                 .code(200)
                 .message(message)
                 .data(response)
+                .build();
+    }
+    @PatchMapping("/appointment/{appointmentId}/cancel")
+    public ApiResponse<AppointmentResponse> cancelAppointment(
+            @RequestHeader("Authorization") String token,
+            @PathVariable UUID appointmentId
+    ) {
+        return ApiResponse.<AppointmentResponse>builder()
+                .success(true)
+                .code(200)
+                .message("Huỷ lịch hẹn thành công")
+                .data(userService.cancelAppointment(token, appointmentId))
                 .build();
     }
 }

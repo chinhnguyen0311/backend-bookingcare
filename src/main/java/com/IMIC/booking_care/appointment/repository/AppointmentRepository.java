@@ -77,4 +77,5 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
             @Param("userId") UUID userId,
             @Param("today") LocalDate today
     );
+    Optional<Appointment> findByAppointmentIdAndUserId(UUID appointmentId, UUID userId);
 }
