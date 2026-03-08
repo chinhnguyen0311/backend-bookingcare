@@ -1,4 +1,4 @@
-package com.IMIC.booking_care.appointment.dto.response;
+package com.IMIC.booking_care.user.dto.response;
 
 import com.IMIC.booking_care.appointment.enums.AppointmentStatus;
 import lombok.AllArgsConstructor;
@@ -15,10 +15,10 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AppointmentResponse {
+public class PatientAppointmentResponse {
     private UUID appointmentId;
-    private UUID doctorId;
-    private UUID userId;
+    private String doctorName;
+    private String specialty;
     private LocalDate appointmentDate;
     private LocalTime startTime;
     private LocalTime endTime;

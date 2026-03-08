@@ -9,8 +9,10 @@ import com.IMIC.booking_care.appointment.entity.DoctorAvailableSlot;
 import com.IMIC.booking_care.appointment.repository.AppointmentRepository;
 import com.IMIC.booking_care.appointment.repository.DoctorAvailableSlotRepository;
 import com.IMIC.booking_care.appointment.repository.DoctorSchedulesRepository;
+import com.IMIC.booking_care.authentication.enums.UserRole;
 import com.IMIC.booking_care.user.entity.User;
 import com.IMIC.booking_care.user.repository.UserRepository;
+import com.nimbusds.jwt.SignedJWT;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -78,10 +80,11 @@ public class MedicalScheduleService {
         return dates;
     }
     @Transactional
-    public AppointmentResponse bookAppointment(AppointmentRequest request) {
+    public AppointmentResponse bookAppointment(String token, AppointmentRequest request) {
         log.info("Booking appointment for doctor={} on date={}", request.getDoctorId(), request.getAppointmentDate());
+        UUID bookerId = extractUserIdFromToken(token); // người đang đăng nhập
 
-        // 1. Kiểm tra slot có tồn tại và còn trống không
+        // 1. Kiểm tra slot
         DoctorAvailableSlot slot = doctorAvailableSlotRepository.findById(request.getSlotId())
                 .orElseThrow(() -> new RuntimeException("Slot không tồn tại"));
 
@@ -93,22 +96,41 @@ public class MedicalScheduleService {
             throw new RuntimeException("Slot không thuộc bác sĩ này");
         }
 
-        // 2. Tạo user tạm từ thông tin form
-        User user = userRepository.save(User.builder()
-                .fullName(request.getFullName())
-                .email(request.getEmail())
-                .username(request.getEmail())
-                .phoneNumber(request.getPhoneNumber())
-                .dob(request.getDob())
-                .address(request.getAddress())
-                .gender(request.getGender())
-                .build());
+        // 2. Xác định người được khám
+        User currentUser = userRepository.findById(bookerId)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
 
-        log.info("Created temporary user with userId={}", user.getUserId());
+        UUID patientUserId;
 
-        // 3. Tạo appointment
+        if (currentUser.getFullName().equals(request.getFullName())) {
+            // ✅ Đặt cho chính mình → cập nhật thông tin
+            log.info("Booking for self, updating info for userId={}", bookerId);
+            currentUser.setPhoneNumber(request.getPhoneNumber());
+            currentUser.setDob(request.getDob());
+            currentUser.setAddress(request.getAddress());
+            currentUser.setGender(request.getGender());
+            userRepository.save(currentUser);
+            patientUserId = bookerId;
+        } else {
+            // ✅ Đặt cho người thân → tạo user mới
+            log.info("Booking for relative, creating new patient");
+            User relative = userRepository.save(User.builder()
+                    .fullName(request.getFullName())
+                    .email(request.getEmail())
+                    .username(request.getPhoneNumber())
+                    .phoneNumber(request.getPhoneNumber())
+                    .dob(request.getDob())
+                    .address(request.getAddress())
+                    .gender(request.getGender())
+                    .role(UserRole.PATIENT)
+                    .build());
+            patientUserId = relative.getUserId();
+            log.info("Created relative userId={}", patientUserId);
+        }
+
+        // 3. Tạo appointment — userId là người được khám
         Appointment appointment = Appointment.builder()
-                .userId(user.getUserId())
+                .userId(patientUserId)  // ✅ người được khám
                 .doctorId(request.getDoctorId())
                 .slotId(request.getSlotId())
                 .appointmentDate(request.getAppointmentDate())
@@ -117,7 +139,8 @@ public class MedicalScheduleService {
                 .build();
 
         Appointment saved = appointmentRepository.save(appointment);
-        log.info("Appointment created with appointmentId={}", saved.getAppointmentId());
+        log.info("Appointment created appointmentId={} for userId={} booked by userId={}",
+                saved.getAppointmentId(), patientUserId, bookerId);
 
         // 4. Đánh dấu slot đã được đặt
         slot.setIsAvailable(false);
@@ -126,6 +149,7 @@ public class MedicalScheduleService {
         return AppointmentResponse.builder()
                 .appointmentId(saved.getAppointmentId())
                 .doctorId(saved.getDoctorId())
+                .userId(patientUserId)
                 .appointmentDate(saved.getAppointmentDate())
                 .startTime(slot.getStartTime())
                 .endTime(slot.getEndTime())
@@ -134,5 +158,15 @@ public class MedicalScheduleService {
                 .notes(saved.getNotes())
                 .createdAt(saved.getCreatedAt())
                 .build();
+    }
+    private UUID extractUserIdFromToken(String token) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token.replace("Bearer ", ""));
+            String userId = signedJWT.getJWTClaimsSet().getStringClaim("userId");
+            return UUID.fromString(userId);
+        } catch (Exception e) {
+            log.error("Error extracting userId from token: {}", e.getMessage());
+            throw new RuntimeException("Token không hợp lệ");
+        }
     }
 }

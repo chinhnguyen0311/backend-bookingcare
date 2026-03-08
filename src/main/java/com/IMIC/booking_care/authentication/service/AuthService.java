@@ -45,21 +45,16 @@ public class AuthService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại"));
 
-        // 2. Kiểm tra role DOCTOR
-        if (!UserRole.DOCTOR.equals(user.getRole())) {
-            throw new RuntimeException("Tài khoản không có quyền truy cập");
-        }
-
-        // 3. Kiểm tra mật khẩu (không mã hoá)
+        // 2. Kiểm tra mật khẩu (không mã hoá)
         if (!request.getPassword().equals(user.getPasswordHash())) {
             throw new RuntimeException("Mật khẩu không chính xác");
         }
 
-        // 4. Generate token
+        // 3. Generate token
         String accessToken = generateToken(user, validDuration);
         String refreshToken = generateToken(user, refreshableDuration);
 
-        log.info("Login successful for username={}", request.getUsername());
+        log.info("Login successful for username={} role={}", request.getUsername(), user.getRole());
 
         return AuthResponse.builder()
                 .accessToken(accessToken)

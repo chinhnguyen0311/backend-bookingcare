@@ -56,4 +56,25 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
             @Param("doctorId") UUID doctorId,
             @Param("today") LocalDate today
     );
+    @Query("""
+    SELECT a FROM Appointment a
+    WHERE a.userId = :userId
+    AND a.status = :status
+    ORDER BY a.appointmentDate ASC, a.expectedTime ASC
+""")
+    List<Appointment> findAppointmentsByUserIdAndStatus(
+            @Param("userId") UUID userId,
+            @Param("status") AppointmentStatus status
+    );
+    @Query("""
+    SELECT a FROM Appointment a
+    WHERE a.userId = :userId
+    AND a.appointmentDate >= :today
+    AND a.status IN ('CONFIRMED', 'PENDING')
+    ORDER BY a.appointmentDate ASC, a.expectedTime ASC
+""")
+    List<Appointment> findUpcomingAppointmentsByUserId(
+            @Param("userId") UUID userId,
+            @Param("today") LocalDate today
+    );
 }

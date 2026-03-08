@@ -59,12 +59,15 @@ public class MedicalScheduleController {
                 .build();
     }
     @PostMapping("/book")
-    public ApiResponse<AppointmentResponse> bookAppointment(@RequestBody AppointmentRequest request) {
+    public ApiResponse<AppointmentResponse> bookAppointment(
+            @RequestHeader("Authorization") String token,
+            @RequestBody AppointmentRequest request
+    ) {
         return ApiResponse.<AppointmentResponse>builder()
                 .success(true)
                 .code(200)
                 .message("Đặt lịch khám thành công")
-                .data(medicalScheduleService.bookAppointment(request))
+                .data(medicalScheduleService.bookAppointment(token, request))
                 .build();
     }
 }
