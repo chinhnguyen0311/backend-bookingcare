@@ -95,7 +95,7 @@ public class DoctorService {
 
         // 3. Lấy danh sách appointment hôm nay
         List<Appointment> appointments = appointmentRepository
-                .findTodayAppointmentsByDoctorId(doctorId, LocalDate.of(2026, 3, 9));
+                .findTodayAppointmentsByDoctorId(doctorId, LocalDate.now());
 
         if (appointments.isEmpty()) {
             log.info("Không có lịch khám nào hôm nay cho doctorId={}", doctorId);
@@ -269,8 +269,8 @@ public class DoctorService {
                 .orElseThrow(() -> new RuntimeException("Tài khoản không phải bác sĩ"));
 
         UUID doctorId = doctor.getDoctorId();
-        LocalDate today = LocalDate.of(2026,3,9);
-        LocalTime now = LocalTime.of(7,0,0);
+        LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
 
         log.info("Fetching next appointment for doctorId={} at {}", doctorId, now);
 
