@@ -1,6 +1,8 @@
 package com.IMIC.booking_care.appointment.controller;
 
+import com.IMIC.booking_care.appointment.dto.request.AppointmentRequest;
 import com.IMIC.booking_care.appointment.dto.request.MedicalScheduleSlotRequest;
+import com.IMIC.booking_care.appointment.dto.response.AppointmentResponse;
 import com.IMIC.booking_care.appointment.dto.response.MedicalScheduleSlotResponse;
 import com.IMIC.booking_care.appointment.service.MedicalScheduleService;
 import com.IMIC.booking_care.common.dto.ApiResponse;
@@ -9,10 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -57,6 +56,15 @@ public class MedicalScheduleController {
                 .code(200)
                 .message(message)
                 .data(dates)
+                .build();
+    }
+    @PostMapping("/book")
+    public ApiResponse<AppointmentResponse> bookAppointment(@RequestBody AppointmentRequest request) {
+        return ApiResponse.<AppointmentResponse>builder()
+                .success(true)
+                .code(200)
+                .message("Đặt lịch khám thành công")
+                .data(medicalScheduleService.bookAppointment(request))
                 .build();
     }
 }
