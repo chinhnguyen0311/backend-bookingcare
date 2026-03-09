@@ -3,7 +3,9 @@ package com.IMIC.booking_care.user.controller;
 import com.IMIC.booking_care.appointment.dto.response.AppointmentResponse;
 import com.IMIC.booking_care.appointment.enums.AppointmentStatus;
 import com.IMIC.booking_care.common.dto.ApiResponse;
+import com.IMIC.booking_care.user.dto.request.UpdateProfileRequest;
 import com.IMIC.booking_care.user.dto.response.PatientAppointmentResponse;
+import com.IMIC.booking_care.user.dto.response.UserProfileResponse;
 import com.IMIC.booking_care.user.service.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +71,29 @@ public class UserController {
                 .code(200)
                 .message("Huỷ lịch hẹn thành công")
                 .data(userService.cancelAppointment(token, appointmentId))
+                .build();
+    }
+    @GetMapping("/profile")
+    public ApiResponse<UserProfileResponse> getProfile(
+            @RequestHeader("Authorization") String token
+    ) {
+        return ApiResponse.<UserProfileResponse>builder()
+                .success(true)
+                .code(200)
+                .message("Lấy thông tin người dùng thành công")
+                .data(userService.getProfile(token))
+                .build();
+    }
+    @PutMapping("/update-profile")
+    public ApiResponse<UserProfileResponse> updateProfile(
+            @RequestHeader("Authorization") String token,
+            @RequestBody UpdateProfileRequest request
+    ) {
+        return ApiResponse.<UserProfileResponse>builder()
+                .success(true)
+                .code(200)
+                .message("Cập nhật thông tin thành công")
+                .data(userService.updateProfile(token, request))
                 .build();
     }
 }

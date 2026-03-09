@@ -8,7 +8,9 @@ import com.IMIC.booking_care.appointment.enums.AppointmentStatus;
 import com.IMIC.booking_care.appointment.repository.AppointmentRepository;
 import com.IMIC.booking_care.appointment.repository.DoctorAvailableSlotRepository;
 import com.IMIC.booking_care.appointment.repository.DoctorRepository;
+import com.IMIC.booking_care.user.dto.request.UpdateProfileRequest;
 import com.IMIC.booking_care.user.dto.response.PatientAppointmentResponse;
+import com.IMIC.booking_care.user.dto.response.UserProfileResponse;
 import com.IMIC.booking_care.user.entity.User;
 import com.IMIC.booking_care.user.repository.UserRepository;
 import com.nimbusds.jwt.SignedJWT;
@@ -180,6 +182,49 @@ public class UserService {
                 .status(saved.getStatus())
                 .notes(saved.getNotes())
                 .createdAt(saved.getCreatedAt())
+                .build();
+    }
+    public UserProfileResponse getProfile(String token) {
+        UUID userId = extractUserIdFromToken(token);
+        log.info("Fetching profile for userId={}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        return UserProfileResponse.builder()
+                .userId(user.getUserId())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .phoneNumber(user.getPhoneNumber())
+                .dob(user.getDob())
+                .gender(user.getGender())
+                .address(user.getAddress())
+                .build();
+    }
+    @Transactional
+    public UserProfileResponse updateProfile(String token, UpdateProfileRequest request) {
+        UUID userId = extractUserIdFromToken(token);
+        log.info("Updating profile for userId={}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        if (request.getFullName() != null) user.setFullName(request.getFullName());
+        if (request.getPhoneNumber() != null) user.setPhoneNumber(request.getPhoneNumber());
+        if (request.getDob() != null) user.setDob(request.getDob());
+        if (request.getGender() != null) user.setGender(request.getGender());
+        if (request.getAddress() != null) user.setAddress(request.getAddress());
+        User saved = userRepository.save(user);
+        log.info("Profile updated for userId={}", userId);
+
+        return UserProfileResponse.builder()
+                .userId(saved.getUserId())
+                .fullName(saved.getFullName())
+                .email(saved.getEmail())
+                .phoneNumber(saved.getPhoneNumber())
+                .dob(saved.getDob())
+                .gender(saved.getGender())
+                .address(saved.getAddress())
                 .build();
     }
     private UUID extractUserIdFromToken(String token) {
